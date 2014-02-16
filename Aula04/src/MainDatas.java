@@ -14,7 +14,7 @@ public class MainDatas {
 		SimpleDateFormat formataData = new SimpleDateFormat(
 				"dd/MM/yyyy");
 
-		try {
+		try {			
 			dataDescobrimento = formataData
 					.parse(strDataDescobrimento);
 		} catch (ParseException e) {
