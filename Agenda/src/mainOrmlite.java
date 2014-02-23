@@ -1,15 +1,9 @@
-import java.sql.SQLException;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
-import com.j256.ormlite.misc.TransactionManager;
 import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.SelectArg;
@@ -19,7 +13,8 @@ import com.j256.ormlite.table.TableUtils;
 public class mainOrmlite {
 
 	// we are using the in-memory H2 database
-		private final static String DATABASE_URL = "jdbc:h2:mem:atividade";
+		//private final static String DATABASE_URL = "jdbc:h2:mem:atividade";
+		private final static String DATABASE_URL = "jdbc:h2:agenda";
 		private Dao<Atividade, Integer> atividadeDao;
 		
 	public static void main(String[] args) throws Exception {
@@ -27,19 +22,18 @@ public class mainOrmlite {
 	}
 
 
-
 	private void doMain(String[] args) throws Exception {
 		ConnectionSource connectionSource = null;
 		
 		try {
-			// create our data-source for the database
+			// cria a conexao
 			connectionSource = new JdbcConnectionSource(DATABASE_URL);
-			// setup our database and DAOs
+			// cria a tabela e o Dao
 			setupDatabase(connectionSource);
-			// read and write some data
+			// teste algumas funções no banco de dados
 			readWriteData();
 
-			System.out.println("\n\nIt seems to have worked\n\n");
+			System.out.println("\n\nFuncionou\n\n");
 		} finally {
 			// destroy the data source which should close underlying connections
 			if (connectionSource != null) {
@@ -47,56 +41,70 @@ public class mainOrmlite {
 			}
 		}
 	}
-	
-	
-	
+		
 	private void setupDatabase(ConnectionSource connectionSource) throws Exception {
 
 		atividadeDao = DaoManager.createDao(connectionSource, Atividade.class);
 
-		// if you need to create the table
-		TableUtils.createTable(connectionSource, Atividade.class);
+		// cria a tabela se não existir
+		TableUtils.createTableIfNotExists(connectionSource, Atividade.class);		
 	}
 	
 	/**
 	 * Read and write some example data.
 	 */
 	private void readWriteData() throws Exception {
-		// create an instance of Account
-		String name = "Jim Coakley";
-		Atividade atividade = new Atividade(new Date(), new Date(), "Minha Atividade", "Local");
-
-		// persist the account object to the database
+		Atividade atividade = new Atividade(new Date(), new Date(), "Minha Atividade", "Local");		
+		// inserindo uma Atividade
 		atividadeDao.create(atividade);
 		int id = atividade.getId();
 		
-
-		// assign a password
+		// alterando uma propriedade
 		atividade.setLocal("FIAP");
-		// update the database after changing the object
+		// executando update
 		atividadeDao.update(atividade);
-		//verifyDb(id, account);
 
-		// query for all items in the database
+		Atividade atividade2 = new Atividade(new Date(), new Date(), "Minha Atividade 2", "Local 2");
+		atividadeDao.create(atividade2);
+
+		Atividade atividade3 = new Atividade(new Date(), new Date(), "Minha Atividade 3 ", "Local 3");
+		atividadeDao.create(atividade3);
+
+		Atividade atividade4 = new Atividade(new Date(), new Date(), "Minha Atividade 4", "Local 4");
+		atividadeDao.create(atividade4);
+
+		// Select em toda a tabela
 		List<Atividade> atividades = atividadeDao.queryForAll();
 		System.out.println(atividades);		
 
-		// construct a query using the QueryBuilder
+		// contruindo uma query com o QueryBuilder
 		QueryBuilder<Atividade, Integer> statementBuilder = atividadeDao.queryBuilder();
-		// shouldn't find anything: name LIKE 'hello" does not match our account
+		
+		// teste para não retornar nada
 		statementBuilder.where().like(Atividade.NOME_CAMPO_NOME, "My");
 		atividades = atividadeDao.query(statementBuilder.prepare());
 		System.out.println(atividades);
 
-		// should find our account: name LIKE 'Jim%' should match our account
-		statementBuilder.where().like(Atividade.NOME_CAMPO_NOME, name.substring(0, 3) + "%");
+		// teste retornando atividades com nome like "Minha"
+		statementBuilder.where().like(Atividade.NOME_CAMPO_NOME, "Minha" + "%");
 		atividades = atividadeDao.query(statementBuilder.prepare());
 		System.out.println(atividades);
 		
-		// delete the account since we are done with it
+		// deleta a atividade inserida
 		atividadeDao.delete(atividade);
-		// we shouldn't find it now
+		
+		// Não deve retornar mais a atividade exluída
 		System.out.println(atividadeDao.queryForId(id));
+		
+		//selecionar atividades pela data
+		//statementBuilder.where().between(Atividade.NOME_CAMPO_DATA_INICIO, new Date(2014,2,1), new Date(2014,2,28));
+		//statementBuilder.where().ge(Atividade.NOME_CAMPO_DATA_INICIO, new Date(2014,2,1));
+		SelectArg selectArg = new SelectArg();
+		statementBuilder.where().ge(Atividade.NOME_CAMPO_DATA_INICIO, selectArg);
+		selectArg.setValue( new Date(2013,2,1));
+		atividades = atividadeDao.query( statementBuilder.prepare());
+		System.out.println(atividades);
+		
 	}
 
 }
